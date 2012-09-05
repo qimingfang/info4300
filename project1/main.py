@@ -12,6 +12,49 @@ class TreeNode:
         self.right = None
         self.data = d
 
+    def rotate_left(self):
+        self.data, self.right.data = self.right.data, self.data
+        old_left = self.left
+
+        self.left, self.right = self.right, self.right.right
+        self.left.right, self.left.left = self.left.left, old_left
+
+    def rotate_right(self):
+        self.data, self.left.data = self.left.data, self.data
+        old_right = self.right
+
+        self.left, self.right = self.left.left, self.left
+        self.right.left, self.right.right = self.right.right, old_right
+
+    def rotate_left_right(self):
+        self.left.rotate_left()
+        self.rotate_right()
+
+    def rotate_right_left(self):
+        self.right.rotate_right()
+        self.rotate_left()
+
+    def height(self):
+        lheight = 0
+        if self.left is not None:
+            lheight = self.left.height()
+        
+        rheight = 0
+        if self.right is not None:
+            rheight = self.right.height()
+
+        return 1 + max(rheight, lheight)
+
+    def needBalance(self):
+        lheight = 0
+        if self.left is not None:
+            lheight = self.left.height()
+        rheight = 0
+        if self.right is not None:
+            rheight = self.right.height()
+
+        return lheight - rheight
+
 class Tree:
     def __init__(self):
         self.root = None
@@ -28,7 +71,24 @@ class Tree:
 
     def traverse(self):
         return self.__traverse(self.root).strip()
-   
+
+    def __balance(self, node):
+        bal = node.needBalance()
+        
+        # left overweighs right
+        if bal > 1:
+            if node.left.needBalance() > 0:
+                node.rotate_right()
+            else:
+                node.rotate_left_right()
+
+        # right overweighs left    
+        elif bal < -1:
+            if node.right.needBalance() < 0:
+                node.rotate_left()
+            else:
+                node.rotate_right_left()
+
     def __insert(self, node, str, filename, loc, desc):
         if node is None:
             p = Posting(str)
@@ -37,13 +97,13 @@ class Tree:
         
         if node.data.string > str:
             node.left = self.__insert(node.left, str, filename, loc, desc)
-            return node
         elif node.data.string < str:
             node.right = self.__insert(node.right, str, filename, loc, desc)
-            return node
         else:
             node.data.add(filename, loc, desc)
-            return node
+        
+        self.__balance(node)
+        return node
 
     # inserts given string into the tree
     def insert(self, str, filename, loc, desc):
@@ -146,6 +206,7 @@ def buildTree(dir):
 
     for f in files:
         processFile(tree, f)
+        print "Processed ", f
 
     return tree
 
@@ -158,7 +219,7 @@ if (options.dirname == None or options.stoplist == None):
     print "Please run with directory option. (python main.py -d [data_dir] -s [stoplist])"
 else:
     stop_list = buildStopList(options.stoplist)
-    tree = buildTree(options.dirname);
+    tree = buildTree(options.dirname)
     done = False
    
     print "Data loaded. Begin Querying"
