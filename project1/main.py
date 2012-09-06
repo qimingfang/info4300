@@ -211,15 +211,16 @@ def buildTree(dir):
     return tree
 
 parser = OptionParser()
-parser.add_option("-d", "--dir", action="store", type="string", dest="dirname")
-parser.add_option("-s", "--stoplist", action="store", type="string", dest="stoplist")
+parser.add_option("-d", action="store", type="string", dest="dir", help="Data Directory location")
+parser.add_option("-s", action="store", type="string", dest="lst", help="StopList location")
+parser.add_option("-a", action="store_true", dest="avl", default=False, help="Use AVL Self Balancing Tree")
 (options, args) = parser.parse_args()
 
 if (options.dirname == None or options.stoplist == None):
     print "Please run with directory option. (python main.py -d [data_dir] -s [stoplist])"
 else:
-    stop_list = buildStopList(options.stoplist)
-    tree = buildTree(options.dirname)
+    stop_list = buildStopList(options.lst)
+    tree = buildTree(options.dir)
     done = False
    
     print "Data loaded. Begin Querying"
