@@ -2,8 +2,11 @@ from optparse import OptionParser
 import sys
 import glob
 import os
+import math
 
 REL_WORDS = 10
+use_avl_tree = False
+total_docs = 0
 stop_list = []
 
 class TreeNode:
@@ -102,7 +105,9 @@ class Tree:
         else:
             node.data.add(filename, loc, desc)
         
-        self.__balance(node)
+        if (use_avl_tree):
+            self.__balance(node)
+       
         return node
 
     # inserts given string into the tree
@@ -156,6 +161,31 @@ class Posting:
             s += "\n"
             s += "  { ... " + desc + " ... }\n"
         return s
+    def __getTF(self, lstLoc):
+        freq = len(lstLoc)
+        return 1 + math.log10(freq)
+    def __getIDF(self, num_docs):
+        global total_docs
+        return 1 + math.log10(total_docs/num_docs)
+    def toDisplay(self):
+        s = ""
+
+        sorted_filenames = sorted(self.entries.keys())
+        num_docs = len(sorted_filenames)
+
+        for filename in sorted_filenames:
+            lstLoc = self.entries[filename]
+            desc = self.desc[filename]
+            
+            tf = self.__getTF(lstLoc)
+            idf = self.__getIDF(num_docs)
+            tfidf = tf * idf
+
+            s += ",".join([str(tf), str(idf), str(tfidf)]) + "\n"
+            s += filename + "," + ",".join(map(lambda x: str(x), lstLoc)) + "\n"
+            s += desc + "\n"
+
+        return s
 
 def buildStopList(filename):
     stop_list = []
@@ -201,11 +231,14 @@ def processFile(tree, filename):
             loc += 1
 
 def buildTree(dir):
+    global total_docs
+
     tree = Tree()
     files = glob.glob(dir + "/*.txt") 
 
     for f in files:
         processFile(tree, f)
+        total_docs += 1
         print "Processed ", f
 
     return tree
@@ -216,13 +249,15 @@ parser.add_option("-s", action="store", type="string", dest="lst", help="StopLis
 parser.add_option("-a", action="store_true", dest="avl", default=False, help="Use AVL Self Balancing Tree")
 (options, args) = parser.parse_args()
 
-if (options.dirname == None or options.stoplist == None):
+if (options.dir == None or options.lst == None):
     print "Please run with directory option. (python main.py -d [data_dir] -s [stoplist])"
 else:
+    use_avl_tree = options.avl
+    if use_avl_tree:
+        print "Building balanced AVL Tree index."
+    
     stop_list = buildStopList(options.lst)
     tree = buildTree(options.dir)
-    done = False
-   
     print "Data loaded. Begin Querying"
 
     while 1:
@@ -236,13 +271,14 @@ else:
         else:
             query = input.split(" ")
             query = map(lambda x: x.lower(), query)
+            print ""
 
             if len(query) is 1:
                 node = tree.find(query[0])
                 if node is None:
                     print errormsg
                 else:
-                    print node.data.toString().strip()
+                    print node.data.toDisplay().strip()
             else:
                 input_filenames = []
                 error = False
