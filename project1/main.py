@@ -212,7 +212,7 @@ class Postings:
         global total_docs
         return 1 + math.log10(total_docs/num_docs)
     
-    # Returns TFIDF (used in multi-word searches)
+    # Returns TFIDF (used in multy-word searches)
     def getTFIDF(self, filename, term):
         global total_docs
         idf = self.__getIDF(len(self.entries.keys()))
@@ -253,10 +253,11 @@ def processFile(tree, filename):
     name, ext = os.path.splitext(base)
     
     visited_words = {}
-    loc = 1
+    loc = 0 
     for line in file(filename):
-        arr = line.strip().split(" ")
-      
+        line = line.strip()
+        arr = line.split(" ")
+
         # for each word ... 
         for i in range(0,len(arr)):
             entry_orig = arr[i].strip()
@@ -351,6 +352,14 @@ else:
             
             # Multi word query
             else:
+
+                # filter out the stop words 
+                query_filtered = []
+                for term in query:
+                    if term not in stop_list:
+                        query_filtered.append(term)
+                query = query_filtered
+                
                 input_filenames = []
                 error = False
 
